@@ -3,9 +3,10 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { Message, MessageBubble, ChatInput } from './components/ChatComponents'
 import { AuthPage } from './components/AuthPage'
-
+import { useAuth } from './lib/contextAPI'
+import Spinner from './components/ui/Spinner'
 export default function ChatContent () {
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const { isAuthenticated, isReady } = useAuth()
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
@@ -14,6 +15,9 @@ export default function ChatContent () {
       timestamp: new Date()
     }
   ])
+
+  console.log(messages);
+  
   const [isLoading, setIsLoading] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
@@ -49,11 +53,16 @@ export default function ChatContent () {
     }, 1500)
   }
 
+  if (!isReady) {
+   return(
+    <Spinner/>
+   )
+  }
   if (!isAuthenticated) {
     return (
       <main className='min-h-screen relative overflow-hidden'>
         <div className='mesh-gradient' />
-        <AuthPage onLogin={() => setIsAuthenticated(true)} />
+        <AuthPage />
       </main>
     )
   }
