@@ -1,65 +1,105 @@
-import Image from "next/image";
+'use client'
 
-export default function Home() {
-  return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
+import React, { useState, useEffect, useRef } from 'react'
+import { Message, MessageBubble, ChatInput } from './components/ChatComponents'
+import { AuthPage } from './components/AuthPage'
+
+export default function ChatContent () {
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [messages, setMessages] = useState<Message[]>([
+    {
+      id: '1',
+      text: "Welcome back! I'm your AI assistant. How can I help you today?",
+      sender: 'ai',
+      timestamp: new Date()
+    }
+  ])
+  const [isLoading, setIsLoading] = useState(false)
+  const messagesEndRef = useRef<HTMLDivElement>(null)
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      scrollToBottom()
+    }
+  }, [messages, isAuthenticated])
+
+  const handleSendMessage = (text: string) => {
+    const userMessage: Message = {
+      id: Date.now().toString(),
+      text,
+      sender: 'user',
+      timestamp: new Date()
+    }
+    setMessages(prev => [...prev, userMessage])
+    setIsLoading(true)
+
+    setTimeout(() => {
+      const aiResponse: Message = {
+        id: (Date.now() + 1).toString(),
+        text: 'This is a simulated AI response. Ready to connect to your backend!',
+        sender: 'ai',
+        timestamp: new Date()
+      }
+      setMessages(prev => [...prev, aiResponse])
+      setIsLoading(false)
+    }, 1500)
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <main className='min-h-screen relative overflow-hidden'>
+        <div className='mesh-gradient' />
+        <AuthPage onLogin={() => setIsAuthenticated(true)} />
       </main>
-    </div>
-  );
+    )
+  }
+
+  return (
+    <main className='flex flex-col min-h-screen relative bg-slate-950'>
+      <div className='' />
+
+      {/* Header - Centered Logo, Dropped Color */}
+      <header className='fixed top-0 left-0 right-0 h-20 bg-slate-950 flex items-center justify-center px-6 z-50 transition-all duration-500'>
+        {/* Spacer */}
+        <div className='flex items-center gap-2 group cursor-pointer hover:rotate-2 transition-transform duration-500 '>
+          <div className='w-10 h-10 rounded-2xl bg-zinc-900 dark:bg-zinc-100 flex items-center justify-center shadow-2xl rotate-3'>
+            <span className='text-white dark:text-zinc-900 text-lg font-black italic'>
+              P
+            </span>
+          </div>
+          <span className='text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100'>
+            Promptly<span className='text-zinc-500'>.ai</span>
+          </span>
+        </div>
+      </header>
+
+      {/* Message Area */}
+      <div className='flex-1 overflow-y-auto px-4 pt-24 pb-32 md:px-6'>
+        <div className='max-w-3xl mx-auto space-y-5'>
+          {messages.map(msg => (
+            <MessageBubble key={msg.id} message={msg} />
+          ))}
+          {isLoading && (
+            <div className='flex justify-start animate-fade-in pl-1'>
+              <div className='glass-card rounded-[1.5rem] px-6 py-4 shadow-sm border-white/20'>
+                <div className='flex gap-1.5 items-center'>
+                  <div className='w-1.5 h-1.5 bg-zinc-400 rounded-full animate-bounce [animation-delay:-0.3s]' />
+                  <div className='w-1.5 h-1.5 bg-zinc-400 rounded-full animate-bounce [animation-delay:-0.15s]' />
+                  <div className='w-1.5 h-1.5 bg-zinc-400 rounded-full animate-bounce' />
+                </div>
+              </div>
+            </div>
+          )}
+          <div ref={messagesEndRef} />
+        </div>
+      </div>
+
+      {/* Input Area */}
+      <ChatInput onSendMessage={handleSendMessage} isLoading={isLoading} />
+    </main>
+  )
 }
