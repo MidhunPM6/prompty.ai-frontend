@@ -5,6 +5,9 @@ import { Message, MessageBubble, ChatInput } from './components/ChatComponents'
 import { AuthPage } from './components/AuthPage'
 import { useAuth } from './lib/contextAPI'
 import Spinner from './components/ui/Spinner'
+import axiosInstance from './lib/apiInstanse'
+import { rejects } from 'assert'
+
 export default function ChatContent () {
   const { isAuthenticated, isReady } = useAuth()
   const [messages, setMessages] = useState<Message[]>([
@@ -16,8 +19,6 @@ export default function ChatContent () {
     }
   ])
 
-  console.log(messages);
-  
   const [isLoading, setIsLoading] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
@@ -31,7 +32,9 @@ export default function ChatContent () {
     }
   }, [messages, isAuthenticated])
 
-  const handleSendMessage = (text: string) => {
+  const handleSendMessage = async (text: string) => {
+    const chatroomId = '6cf9be10-af73-4620-a22a-f9c013354fa4'
+
     const userMessage: Message = {
       id: Date.now().toString(),
       text,
@@ -41,22 +44,70 @@ export default function ChatContent () {
     setMessages(prev => [...prev, userMessage])
     setIsLoading(true)
 
-    setTimeout(() => {
-      const aiResponse: Message = {
-        id: (Date.now() + 1).toString(),
-        text: 'This is a simulated AI response. Ready to connect to your backend!',
-        sender: 'ai',
-        timestamp: new Date()
-      }
-      setMessages(prev => [...prev, aiResponse])
+    try {
+      const response = await axiosInstance.post(
+        `/chatroom/${chatroomId}/message`,
+        { message: text },
+        { withCredentials: true }
+      )
+      await messagePooingHandler(response.data.jobId)
+    } catch (error) {
+      console.error(error)
+    } finally {
       setIsLoading(false)
-    }, 1500)
+    }
+  }
+
+  const messagePooingHandler = async (jobId: string): Promise<string> => {
+    let lastLength = 0
+
+    setMessages(prev => [
+      ...prev,
+      {
+        id: jobId,
+        text: '',
+        sender: 'ai',
+        timestamp: new Date(),
+        isTyping: false
+      }
+    ])
+
+    while (true) {
+      const status = await axiosInstance.get(`/job/${jobId}/status`, {
+        withCredentials: true
+      })
+
+      const { state, progress, result } = status.data
+
+      if (progress?.full && progress.full.length > lastLength) {
+        lastLength = progress.full.length
+
+        setMessages(prev =>
+          prev.map(msg =>
+            msg.id === jobId ? { ...msg, text: progress.full } : msg
+          )
+        )
+      }
+
+      if (state === 'completed') {
+        setMessages(prev =>
+          prev.map(msg =>
+            msg.id === jobId ? { ...msg, text: result.response } : msg
+          )
+        )
+        return result.response
+      }
+
+      if (state === 'failed') {
+        throw new Error(status.data.reason ?? 'Job failed')
+      }
+
+      await new Promise(res => setTimeout(res, 500))
+    }
   }
 
   if (!isReady) {
-   return(
-    <Spinner/>
-   )
+    return <Spinner />
   }
   if (!isAuthenticated) {
     return (

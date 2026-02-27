@@ -26,11 +26,19 @@ export const AuthProvider = ({ children }: Props) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [isReady, setIsReady] = useState(false)
 
+  // Load from localStorage
   useEffect(() => {
     const storedAuth = localStorage.getItem('isAuthenticated')
     setIsAuthenticated(storedAuth === 'true')
     setIsReady(true)
   }, [])
+
+
+  useEffect(() => {
+    if (isReady) {
+      localStorage.setItem('isAuthenticated', String(isAuthenticated))
+    }
+  }, [isAuthenticated, isReady])
 
   return (
     <AuthContext.Provider

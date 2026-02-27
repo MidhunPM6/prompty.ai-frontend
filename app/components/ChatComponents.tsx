@@ -55,6 +55,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
     isLoading,
 }) => {
     const [input, setInput] = React.useState("");
+    
     const textareaRef = useRef<HTMLTextAreaElement>(null);
 
     const adjustHeight = () => {
